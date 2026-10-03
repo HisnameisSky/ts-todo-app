@@ -1,6 +1,6 @@
 import "./styles.css";
 
-// 1. タスクデータの型定義
+// タスクデータの型定義
 interface Todo {
   id: number;
   text: string;
@@ -9,7 +9,7 @@ interface Todo {
 
 type FilterType = "all" | "active" | "completed";
 
-// 2. LocalStorage 関連の定数・関数
+// LocalStorage 関連の定数・関数
 const STORAGE_KEY = "ts_todo_app_data";
 
 function saveTodos(): void {
@@ -27,16 +27,16 @@ function loadTodos(): Todo[] {
   }
 }
 
-// 3. アプリの状態（ステート）管理
+// アプリの状態（ステート）管理
 let todos: Todo[] = loadTodos(); // LocalStorage から読み込んで初期化
 let currentFilter: FilterType = "all";
 
-// 4. DOM要素の取得
+// DOM要素の取得
 const inputEl = document.querySelector<HTMLInputElement>("#todo-input")!;
 const addBtn = document.querySelector<HTMLButtonElement>("#add-btn")!;
 const todoListEl = document.querySelector<HTMLUListElement>("#todo-list")!;
 
-// --- 5. タスク一覧の描画関数 ---
+// --- タスク一覧の描画関数 ---
 function render(): void {
   todoListEl.innerHTML = "";
 
@@ -59,6 +59,20 @@ function render(): void {
     textSpan.textContent = todo.text;
     if (todo.completed) textSpan.classList.add("completed");
 
+    // ★ 優先度バッジの生成と追加
+    const badge = document.createElement("span");
+    badge.classList.add("priority-badge", `priority-${todo.priority}`);
+    
+    // バッジのテキスト表示
+    const priorityLabels: Record<Priority, string> = {
+      high: "高",
+      medium: "中",
+      low: "低",
+    };
+    badge.textContent = priorityLabels[todo.priority];
+
+    textSpan.appendChild(badge); // テキストの中にバッジを入れる
+    //
     // クリックで完了/未完了の切り替え
     textSpan.addEventListener("click", () => {
       todo.completed = !todo.completed;
@@ -88,7 +102,7 @@ function render(): void {
   });
 }
 
-// --- 6. タスク追加処理 ---
+// --- タスク追加処理（addTodo）の修正 ---
 function addTodo(): void {
   const text = inputEl.value.trim();
   if (text === "") return;
@@ -97,15 +111,17 @@ function addTodo(): void {
     id: Date.now(),
     text: text,
     completed: false,
+    priority: (prioritySelect.value as Priority) || "medium", // ★ 選択された優先度を取得
   };
 
   todos.push(newTodo);
-  saveTodos(); // データ保存
+  saveTodos();
   inputEl.value = "";
+  prioritySelect.value = "medium"; // 初期値に戻す
   render();
 }
 
-// --- 7. フィルターボタンのハイライト用関数 ---
+// --- フィルターボタンのハイライト用関数 ---
 function updateFilterButtons(): void {
   const btnAll = document.querySelector<HTMLButtonElement>("#filter-all");
   const btnActive = document.querySelector<HTMLButtonElement>("#filter-active");
@@ -119,7 +135,7 @@ function updateFilterButtons(): void {
   if (currentFilter === "completed") btnCompleted?.classList.add("active");
 }
 
-// --- 8. イベントリスナーの設定 ---
+// --- イベントリスナーの設定 ---
 addBtn.addEventListener("click", addTodo);
 
 // Enterキーでもタスク追加できるように追加
@@ -143,7 +159,7 @@ document.querySelector("#filter-completed")?.addEventListener("click", () => {
 });
 
 
-// --- 10. JSON エクスポート処理 ---
+// --- JSON エクスポート処理 ---
 function exportTodos(): void {
   if (todos.length === 0) {
     alert("エクスポートするタスクがありません。");
@@ -165,7 +181,7 @@ function exportTodos(): void {
   URL.revokeObjectURL(url);
 }
 
-// --- 11. JSON インポート処理 ---
+// --- JSON インポート処理 ---
 function importTodos(event: Event): void {
   const input = event.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
@@ -211,6 +227,20 @@ function isValidTodoList(data: any[]): data is Todo[] {
 // --- イベントリスナーの登録 ---
 document.querySelector("#export-btn")?.addEventListener("click", exportTodos);
 document.querySelector("#import-file")?.addEventListener("change", importTodos);
+
+//
+// 優先度の型定義を追加
+type Priority = "high" | "medium" | "low";
+
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+  priority: Priority; // ★ 優先度フィールドを追加
+}
+
+// DOM要素の取得
+const prioritySelect = document.querySelector<HTMLSelectElement>("#priority-select")!;
 
 
 // --- 初回描画の実行 ---
