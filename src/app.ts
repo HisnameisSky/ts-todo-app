@@ -142,5 +142,76 @@ document.querySelector("#filter-completed")?.addEventListener("click", () => {
   render();
 });
 
-// --- 9. 初回描画の実行 ---
+
+// --- 10. JSON エクスポート処理 ---
+function exportTodos(): void {
+  if (todos.length === 0) {
+    alert("エクスポートするタスクがありません。");
+    return;
+  }
+
+  // データを JSON 文字列化して Blob に変換
+  const dataStr = JSON.stringify(todos, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  // 疑似アンカータグを作成してダウンロードを実行
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `todo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+
+  // メモリ解放
+  URL.revokeObjectURL(url);
+}
+
+// --- 11. JSON インポート処理 ---
+function importTodos(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+
+  const file = input.files[0];
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    try {
+      const content = e.target?.result as string;
+      const parsedData = JSON.parse(content);
+
+      // 簡単な型チェック（配列かつ構造が妥当か確認）
+      if (Array.isArray(parsedData) && isValidTodoList(parsedData)) {
+        todos = parsedData;
+        saveTodos(); // LocalStorage も更新
+        render();    // 画面再描画
+        alert("データを正常に復元しました！");
+      } else {
+        alert("無効な JSON フォーマットです。");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("JSON ファイルの読み込みに失敗しました。");
+    } finally {
+      input.value = ""; // 次回同じファイルを選べるようにリセット
+    }
+  };
+
+  reader.readAsText(file);
+}
+
+// インポートデータの型検証用関数 (Type Guard)
+function isValidTodoList(data: any[]): data is Todo[] {
+  return data.every(
+    (item) =>
+      typeof item.id === "number" &&
+      typeof item.text === "string" &&
+      typeof item.completed === "boolean"
+  );
+}
+
+// --- イベントリスナーの登録 ---
+document.querySelector("#export-btn")?.addEventListener("click", exportTodos);
+document.querySelector("#import-file")?.addEventListener("change", importTodos);
+
+
+// --- 初回描画の実行 ---
 render();
