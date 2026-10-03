@@ -215,3 +215,41 @@ li.removing {
 .file-label:hover {
   background-color: #e5e7eb;
 }
+
+/* 優先度バッジの共通スタイル */
+.priority-badge {
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* 各優先度の配色 */
+.priority-high {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.priority-medium {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.priority-low {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+/* 入力エリアの select 要素スタイル調整 */
+#priority-select {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+  background-color: #ffffff;
+  cursor: pointer;
+}
