@@ -1,15 +1,17 @@
 import "./styles.css";
 
-// タスクデータの型定義
+// 1. 型定義
+type Priority = "high" | "medium" | "low";
+type FilterType = "all" | "active" | "completed";
+
 interface Todo {
   id: number;
   text: string;
   completed: boolean;
+  priority: Priority;
 }
 
-type FilterType = "all" | "active" | "completed";
-
-// LocalStorage 関連の定数・関数
+// 2. 定数 & LocalStorage 補助関数
 const STORAGE_KEY = "ts_todo_app_data";
 
 function saveTodos(): void {
@@ -20,37 +22,41 @@ function loadTodos(): Todo[] {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) return [];
   try {
-    return JSON.parse(saved) as Todo[];
+    const parsed = JSON.parse(saved);
+    // 既存の古いデータ（priority がないデータ）にも互換性を持たせる処理
+    return parsed.map((item: any) => ({
+      ...item,
+      priority: item.priority || "medium",
+    }));
   } catch (e) {
     console.error("Failed to load todos from localStorage", e);
     return [];
   }
 }
 
-// アプリの状態（ステート）管理
-let todos: Todo[] = loadTodos(); // LocalStorage から読み込んで初期化
+// 3. アプリの状態管理
+let todos: Todo[] = loadTodos();
 let currentFilter: FilterType = "all";
 
-// DOM要素の取得
+// 4. DOM要素の取得（上部に一括配置）
 const inputEl = document.querySelector<HTMLInputElement>("#todo-input")!;
 const addBtn = document.querySelector<HTMLButtonElement>("#add-btn")!;
 const todoListEl = document.querySelector<HTMLUListElement>("#todo-list")!;
+const prioritySelect = document.querySelector<HTMLSelectElement>("#priority-select")!;
 
-// --- タスク一覧の描画関数 ---
+// 5. タスク一覧の描画関数
 function render(): void {
   todoListEl.innerHTML = "";
 
-  // ① フィルター処理
+  // フィルター処理
   const filteredTodos = todos.filter((todo) => {
     if (currentFilter === "active") return !todo.completed;
     if (currentFilter === "completed") return todo.completed;
     return true;
   });
 
-  // ② フィルターボタンの見た目（.active クラス）を更新
   updateFilterButtons();
 
-  // ③ 画面へ出力
   filteredTodos.forEach((todo) => {
     const li = document.createElement("li");
 
@@ -59,25 +65,23 @@ function render(): void {
     textSpan.textContent = todo.text;
     if (todo.completed) textSpan.classList.add("completed");
 
-    // ★ 優先度バッジの生成と追加
+    // 優先度バッジの生成
     const badge = document.createElement("span");
     badge.classList.add("priority-badge", `priority-${todo.priority}`);
     
-    // バッジのテキスト表示
     const priorityLabels: Record<Priority, string> = {
       high: "高",
       medium: "中",
       low: "低",
     };
     badge.textContent = priorityLabels[todo.priority];
+    textSpan.appendChild(badge);
 
-    textSpan.appendChild(badge); // テキストの中にバッジを入れる
-    //
-    // クリックで完了/未完了の切り替え
+    // 完了/未完了の切り替え
     textSpan.addEventListener("click", () => {
       todo.completed = !todo.completed;
-      saveTodos(); // データ保存
-      render();    // 再描画
+      saveTodos();
+      render();
     });
 
     // 削除ボタン
@@ -91,8 +95,8 @@ function render(): void {
 
       setTimeout(() => {
         todos = todos.filter((t) => t.id !== todo.id);
-        saveTodos(); // データ保存
-        render();    // 再描画
+        saveTodos();
+        render();
       }, 250);
     });
 
@@ -102,7 +106,7 @@ function render(): void {
   });
 }
 
-// --- タスク追加処理（addTodo）の修正 ---
+// 6. タスク追加処理
 function addTodo(): void {
   const text = inputEl.value.trim();
   if (text === "") return;
@@ -111,21 +115,20 @@ function addTodo(): void {
     id: Date.now(),
     text: text,
     completed: false,
-    priority: (prioritySelect.value as Priority) || "medium", // ★ 選択された優先度を取得
+    priority: (prioritySelect.value as Priority) || "medium",
   };
 
   todos.push(newTodo);
   saveTodos();
   inputEl.value = "";
-  prioritySelect.value = "medium"; // 初期値に戻す
+  prioritySelect.value = "medium";
   render();
 }
 
-// --- フィルターボタンのハイライト用関数 ---
+// 7. フィルターボタンのハイライト処理
 function updateFilterButtons(): void {
   const btnAll = document.querySelector<HTMLButtonElement>("#filter-all");
   const btnActive = document.querySelector<HTMLButtonElement>("#filter-active");
-  // ★ ID指定の `#` のタイポを修正
   const btnCompleted = document.querySelector<HTMLButtonElement>("#filter-completed");
 
   [btnAll, btnActive, btnCompleted].forEach((btn) => btn?.classList.remove("active"));
@@ -135,10 +138,68 @@ function updateFilterButtons(): void {
   if (currentFilter === "completed") btnCompleted?.classList.add("active");
 }
 
-// --- イベントリスナーの設定 ---
+// 8. JSON エクスポート / インポート機能
+function exportTodos(): void {
+  if (todos.length === 0) {
+    alert("エクスポートするタスクがありません。");
+    return;
+  }
+
+  const dataStr = JSON.stringify(todos, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `todo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function importTodos(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+
+  const file = input.files[0];
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    try {
+      const content = e.target?.result as string;
+      const parsedData = JSON.parse(content);
+
+      if (Array.isArray(parsedData) && isValidTodoList(parsedData)) {
+        todos = parsedData;
+        saveTodos();
+        render();
+        alert("データを正常に復元しました！");
+      } else {
+        alert("無効な JSON フォーマットです。");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("JSON ファイルの読み込みに失敗しました。");
+    } finally {
+      input.value = "";
+    }
+  };
+
+  reader.readAsText(file);
+}
+
+function isValidTodoList(data: any[]): data is Todo[] {
+  return data.every(
+    (item) =>
+      typeof item.id === "number" &&
+      typeof item.text === "string" &&
+      typeof item.completed === "boolean"
+  );
+}
+
+// 9. イベントリスナーの設定
 addBtn.addEventListener("click", addTodo);
 
-// Enterキーでもタスク追加できるように追加
 inputEl.addEventListener("keypress", (e) => {
   if (e.key === "Enter") addTodo();
 });
@@ -158,90 +219,8 @@ document.querySelector("#filter-completed")?.addEventListener("click", () => {
   render();
 });
 
-
-// --- JSON エクスポート処理 ---
-function exportTodos(): void {
-  if (todos.length === 0) {
-    alert("エクスポートするタスクがありません。");
-    return;
-  }
-
-  // データを JSON 文字列化して Blob に変換
-  const dataStr = JSON.stringify(todos, null, 2);
-  const blob = new Blob([dataStr], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  // 疑似アンカータグを作成してダウンロードを実行
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `todo-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-
-  // メモリ解放
-  URL.revokeObjectURL(url);
-}
-
-// --- JSON インポート処理 ---
-function importTodos(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
-
-  const file = input.files[0];
-  const reader = new FileReader();
-
-  reader.onload = (e) => {
-    try {
-      const content = e.target?.result as string;
-      const parsedData = JSON.parse(content);
-
-      // 簡単な型チェック（配列かつ構造が妥当か確認）
-      if (Array.isArray(parsedData) && isValidTodoList(parsedData)) {
-        todos = parsedData;
-        saveTodos(); // LocalStorage も更新
-        render();    // 画面再描画
-        alert("データを正常に復元しました！");
-      } else {
-        alert("無効な JSON フォーマットです。");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("JSON ファイルの読み込みに失敗しました。");
-    } finally {
-      input.value = ""; // 次回同じファイルを選べるようにリセット
-    }
-  };
-
-  reader.readAsText(file);
-}
-
-// インポートデータの型検証用関数 (Type Guard)
-function isValidTodoList(data: any[]): data is Todo[] {
-  return data.every(
-    (item) =>
-      typeof item.id === "number" &&
-      typeof item.text === "string" &&
-      typeof item.completed === "boolean"
-  );
-}
-
-// --- イベントリスナーの登録 ---
 document.querySelector("#export-btn")?.addEventListener("click", exportTodos);
 document.querySelector("#import-file")?.addEventListener("change", importTodos);
 
-//
-// 優先度の型定義を追加
-type Priority = "high" | "medium" | "low";
-
-interface Todo {
-  id: number;
-  text: string;
-  completed: boolean;
-  priority: Priority; // ★ 優先度フィールドを追加
-}
-
-// DOM要素の取得
-const prioritySelect = document.querySelector<HTMLSelectElement>("#priority-select")!;
-
-
-// --- 初回描画の実行 ---
+// 10. 初期描画
 render();
