@@ -186,3 +186,32 @@ li {
 li.removing {
   animation: fadeOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/**/
+
+.backup-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.backup-group button,
+.file-label {
+  flex: 1;
+  text-align: center;
+  background-color: #f3f4f6;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backup-group button:hover,
+.file-label:hover {
+  background-color: #e5e7eb;
+}
