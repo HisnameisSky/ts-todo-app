@@ -5,7 +5,7 @@ Vite + TypeScript で構築した、フィルタリング・アニメーショ�
 <img width="424" height="317" alt="スクリーンショット 2026-10-04 5 50 50" src="https://github.com/user-attachments/assets/17f4f873-7379-4567-ae81-40e4760e0ac7" />
 
 
-🌐 **Live Demo:** [ts-todo-app-snowy.vercel.app]
+🌐 **Live Demo:** [[ts-todo-app-snowy.vercel.app](https://ts-todo-app-snowy.vercel.app/)]
 
 ---
 
