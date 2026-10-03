@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TypeScript Todo App</title>
+  <style>
+    body { font-family: sans-serif; max-width: 400px; margin: 20px auto; padding: 10px; }
+    .completed { text-decoration: line-through; color: #888; }
+    li { cursor: pointer; margin: 8px 0; user-select: none; }
+  </style>
+</head>
+<body>
+  <div class="app-card">
+    <h1>Todo アプリ</h1>
+    <div class="input-group">
+      <input type="text" id="todo-input" placeholder="新しいタスクを入力..." />
+      <button id="add-btn">追加</button>
+    </div>
+
+    <div class="filter-group">
+      <button id="filter-all">すべて</button>
+      <button id="filter-active">未完了</button>
+      <button id="filter-completed">完了済み</button>
+    </div>
+
+    <ul id="todo-list"></ul>
+  </div>
+
+  <script type="module" src="/src/app.ts"></script>
+</body>
+</html>
