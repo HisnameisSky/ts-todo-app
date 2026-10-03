@@ -4,44 +4,39 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TypeScript Todo App</title>
-  <style>
-    body { font-family: sans-serif; max-width: 400px; margin: 20px auto; padding: 10px; }
-    .completed { text-decoration: line-through; color: #888; }
-    li { cursor: pointer; margin: 8px 0; user-select: none; }
-  </style>
 </head>
 <body>
   <div class="app-card">
     <h1>Todo アプリ</h1>
+
+    <!-- 入力グループ（優先度選択付き） -->
     <div class="input-group">
       <input type="text" id="todo-input" placeholder="新しいタスクを入力..." />
+      <select id="priority-select">
+        <option value="medium">中</option>
+        <option value="high">高 🔴</option>
+        <option value="low">低 🔵</option>
+      </select>
       <button id="add-btn">追加</button>
     </div>
 
+    <!-- フィルターボタン -->
     <div class="filter-group">
       <button id="filter-all">すべて</button>
       <button id="filter-active">未完了</button>
       <button id="filter-completed">完了済み</button>
     </div>
 
+    <!-- タスク一覧表示領域 -->
+    <ul id="todo-list"></ul>
+
+    <!-- バックアップ機能グループ -->
     <div class="backup-group">
       <button id="export-btn">JSON エクスポート</button>
       <label for="import-file" class="file-label">JSON インポート</label>
       <input type="file" id="import-file" accept=".json" style="display: none;" />
     </div>
-
-    <div class="input-group">
-      <input type="text" id="todo-input" placeholder="新しいタスクを入力..." />
-      
-      <!-- ★ 優先度選択を追加 -->
-      <select id="priority-select">
-        <option value="medium">中</option>
-        <option value="high">高 🔴</option>
-        <option value="low">低 🔵</option>
-      </select>
-      
-      <button id="add-btn">追加</button>
-    </div>
+  </div>
 
   <script type="module" src="/src/app.ts"></script>
 </body>
