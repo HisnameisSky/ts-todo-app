@@ -54,6 +54,16 @@ input[type="text"]:focus {
   border-color: var(--primary-color);
 }
 
+#priority-select {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
 button {
   padding: 10px 16px;
   border: none;
@@ -93,6 +103,13 @@ button:active {
   background: #f9fafb;
 }
 
+.filter-group button.active {
+  color: var(--primary-color);
+  font-weight: 700;
+  border-bottom: 2px solid var(--primary-color);
+  border-radius: 0;
+}
+
 ul {
   list-style: none;
   padding: 0;
@@ -109,6 +126,8 @@ li {
   margin-bottom: 8px;
   background: #ffffff;
   transition: all 0.2s;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
 }
 
 li:hover {
@@ -138,56 +157,30 @@ li span.completed {
   color: var(--danger-hover);
 }
 
-/* 選択されているフィルターボタンの見た目 */
-.filter-group button.active {
-  color: var(--primary-color);
-  font-weight: 700;
-  border-bottom: 2px solid var(--primary-color);
-  border-radius: 0;
+.priority-badge {
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  display: inline-block;
+  vertical-align: middle;
 }
 
-/* --- タスク追加・表示時のアニメーション --- */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.priority-high {
+  background-color: #fee2e2;
+  color: #dc2626;
 }
 
-/* --- タスク削除時のアニメーション --- */
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-    max-height: 50px;
-  }
-  to {
-    opacity: 0;
-    transform: translateX(30px);
-    max-height: 0;
-    margin-bottom: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-  }
+.priority-medium {
+  background-color: #fef3c7;
+  color: #d97706;
 }
 
-/* 各 li 要素にアニメーションを適用 */
-li {
-  /* ...既存のスタイル... */
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  overflow: hidden; /* 削除時の高さアニメーション崩れ防止 */
+.priority-low {
+  background-color: #e0f2fe;
+  color: #0284c7;
 }
-
-/* 削除用クラス（TSから動的に付与） */
-li.removing {
-  animation: fadeOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/**/
 
 .backup-group {
   display: flex;
@@ -216,40 +209,33 @@ li.removing {
   background-color: #e5e7eb;
 }
 
-/* 優先度バッジの共通スタイル */
-.priority-badge {
-  font-size: 11px;
-  font-weight: bold;
-  padding: 2px 8px;
-  border-radius: 12px;
-  margin-left: 8px;
-  display: inline-block;
-  vertical-align: middle;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* 各優先度の配色 */
-.priority-high {
-  background-color: #fee2e2;
-  color: #dc2626;
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 50px;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(30px);
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
 }
 
-.priority-medium {
-  background-color: #fef3c7;
-  color: #d97706;
-}
-
-.priority-low {
-  background-color: #e0f2fe;
-  color: #0284c7;
-}
-
-/* 入力エリアの select 要素スタイル調整 */
-#priority-select {
-  padding: 8px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  outline: none;
-  font-size: 14px;
-  background-color: #ffffff;
-  cursor: pointer;
+li.removing {
+  animation: fadeOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
