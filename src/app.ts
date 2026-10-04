@@ -4,12 +4,102 @@ import "./styles.css";
 type Priority = "high" | "medium" | "low";
 type FilterType = "all" | "active" | "completed";
 
+// --- ポモドーロタイマーの状態管理 ---
+type TimerMode = "work" | "break";
+let timerInterval: number | null = null;
+let timeLeft = 25 * 60; // 初期値: 25分（秒単位）
+let isRunning = false;
+let currentMode: TimerMode = "work";
+let activeTodoId: number | null = null; // 現在実行中のタスクID
+
+// DOM要素
+const timerDisplay = document.querySelector<HTMLDivElement>("#timer-display")!;
+const timerStatus = document.querySelector<HTMLDivElement>("#timer-status")!;
+const startBtn = document.querySelector<HTMLButtonElement>("#timer-start-btn")!;
+const pauseBtn = document.querySelector<HTMLButtonElement>("#timer-pause-btn")!;
+const resetBtn = document.querySelector<HTMLButtonElement>("#timer-reset-btn")!;
+
+
 interface Todo {
   id: number;
   text: string;
   completed: boolean;
   priority: Priority;
 }
+
+
+// 表示の更新関数
+function updateTimerDisplay(): void {
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  timerDisplay.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+// タイマー開始
+function startTimer(): void {
+  if (isRunning) return;
+  isRunning = true;
+  startBtn.disabled = true;
+  pauseBtn.disabled = false;
+
+  const activeTodo = todos.find((t) => t.id === activeTodoId);
+  const taskName = activeTodo ? `「${activeTodo.text}」を実行中` : "作業中";
+  timerStatus.textContent = currentMode === "work" ? taskName : "☕ 休憩中";
+
+  timerInterval = window.setInterval(() => {
+    if (timeLeft > 0) {
+      timeLeft--;
+      updateTimerDisplay();
+    } else {
+      // タイムアップ時の処理
+      clearInterval(timerInterval!);
+      isRunning = false;
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+
+      if (currentMode === "work") {
+        alert("25分の作業が終了しました！5分間の休憩に入りましょう。");
+        currentMode = "break";
+        timeLeft = 5 * 60; // 5分休憩
+      } else {
+        alert("休憩が終了しました！次の作業を始めましょう。");
+        currentMode = "work";
+        timeLeft = 25 * 60; // 25分作業
+      }
+      updateTimerDisplay();
+      timerStatus.textContent = "準備完了";
+    }
+  }, 1000);
+}
+
+// 一時停止
+function pauseTimer(): void {
+  if (!isRunning) return;
+  clearInterval(timerInterval!);
+  isRunning = false;
+  startBtn.disabled = false;
+  pauseBtn.disabled = true;
+  timerStatus.textContent = "一時停止中";
+}
+
+// リセット
+function resetTimer(): void {
+  clearInterval(timerInterval!);
+  isRunning = false;
+  currentMode = "work";
+  timeLeft = 25 * 60;
+  activeTodoId = null;
+  startBtn.disabled = false;
+  pauseBtn.disabled = true;
+  timerStatus.textContent = "準備完了";
+  updateTimerDisplay();
+  render(); // タスク一覧側の強調を解除するために再描画
+}
+
+// イベントリスナー
+startBtn.addEventListener("click", startTimer);
+pauseBtn.addEventListener("click", pauseTimer);
+resetBtn.addEventListener("click", resetTimer);
 
 // 2. 定数 & LocalStorage 補助関数
 const STORAGE_KEY = "ts_todo_app_data";
@@ -138,6 +228,26 @@ function render(): void {
       }, 250);
     });
 
+    const timerStartForTaskBtn = document.createElement("button");
+    timerStartForTaskBtn.textContent = "⏱️";
+    timerStartForTaskBtn.classList.add("task-timer-btn");
+
+    // 現在選択されているタスクを強調
+    if (todo.id === activeTodoId) {
+      li.classList.add("active-task");
+    }
+
+    timerStartForTaskBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      activeTodoId = todo.id;
+      currentMode = "work";
+      timeLeft = 25 * 60;
+      updateTimerDisplay();
+      startTimer();
+      render();
+    });
+
+    li.appendChild(timerStartForTaskBtn);
     li.appendChild(textSpan);
     li.appendChild(deleteBtn);
     todoListEl.appendChild(li);
