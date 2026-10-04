@@ -9,6 +9,17 @@
   <div class="app-card">
     <h1>Todo アプリ</h1>
 
+    <!-- タイマーエリア -->
+  <div class="pomodoro-card">
+    <div class="timer-display" id="timer-display">25:00</div>
+    <div class="timer-status" id="timer-status">準備完了</div>
+    <div class="timer-controls">
+      <button id="timer-start-btn">開始</button>
+      <button id="timer-pause-btn" disabled>一時停止</button>
+      <button id="timer-reset-btn">リセット</button>
+    </div>
+  </div>
+
     <!-- 入力グループ（優先度選択付き） -->
     <div class="input-group">
       <input type="text" id="todo-input" placeholder="新しいタスクを入力..." />
