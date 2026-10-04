@@ -3,22 +3,7 @@ import "./styles.css";
 // 1. 型定義
 type Priority = "high" | "medium" | "low";
 type FilterType = "all" | "active" | "completed";
-
-// --- ポモドーロタイマーの状態管理 ---
 type TimerMode = "work" | "break";
-let timerInterval: number | null = null;
-let timeLeft = 25 * 60; // 初期値: 25分（秒単位）
-let isRunning = false;
-let currentMode: TimerMode = "work";
-let activeTodoId: number | null = null; // 現在実行中のタスクID
-
-// DOM要素
-const timerDisplay = document.querySelector<HTMLDivElement>("#timer-display")!;
-const timerStatus = document.querySelector<HTMLDivElement>("#timer-status")!;
-const startBtn = document.querySelector<HTMLButtonElement>("#timer-start-btn")!;
-const pauseBtn = document.querySelector<HTMLButtonElement>("#timer-pause-btn")!;
-const resetBtn = document.querySelector<HTMLButtonElement>("#timer-reset-btn")!;
-
 
 interface Todo {
   id: number;
@@ -27,15 +12,65 @@ interface Todo {
   priority: Priority;
 }
 
+// 2. 定数 & LocalStorage 補助関数
+const STORAGE_KEY = "ts_todo_app_data";
 
-// 表示の更新関数
+function saveTodos(): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+}
+
+function loadTodos(): Todo[] {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return [];
+  try {
+    const parsed = JSON.parse(saved);
+    return parsed.map((item: any) => ({
+      ...item,
+      priority: item.priority || "medium",
+    }));
+  } catch (e) {
+    console.error("Failed to load todos from localStorage", e);
+    return [];
+  }
+}
+
+// 3. アプリの状態管理（変数定義を関数より前に一括配置）
+let todos: Todo[] = loadTodos();
+let currentFilter: FilterType = "all";
+
+// ポモドーロタイマーの状態管理
+let timerInterval: number | null = null;
+let timeLeft = 25 * 60; // 25分
+let isRunning = false;
+let currentMode: TimerMode = "work";
+let activeTodoId: number | null = null;
+
+// 4. DOM要素の取得
+const inputEl = document.querySelector<HTMLInputElement>("#todo-input")!;
+const addBtn = document.querySelector<HTMLButtonElement>("#add-btn")!;
+const todoListEl = document.querySelector<HTMLUListElement>("#todo-list")!;
+const prioritySelect = document.querySelector<HTMLSelectElement>("#priority-select")!;
+
+const timerDisplay = document.querySelector<HTMLDivElement>("#timer-display")!;
+const timerStatus = document.querySelector<HTMLDivElement>("#timer-status")!;
+const startBtn = document.querySelector<HTMLButtonElement>("#timer-start-btn")!;
+const pauseBtn = document.querySelector<HTMLButtonElement>("#timer-pause-btn")!;
+const resetBtn = document.querySelector<HTMLButtonElement>("#timer-reset-btn")!;
+
+// --- 優先度の重み付け（ソート用） ---
+const priorityOrder: Record<Priority, number> = {
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+// 5. タイマー関連の関数
 function updateTimerDisplay(): void {
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   timerDisplay.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-// タイマー開始
 function startTimer(): void {
   if (isRunning) return;
   isRunning = true;
@@ -51,7 +86,6 @@ function startTimer(): void {
       timeLeft--;
       updateTimerDisplay();
     } else {
-      // タイムアップ時の処理
       clearInterval(timerInterval!);
       isRunning = false;
       startBtn.disabled = false;
@@ -60,11 +94,11 @@ function startTimer(): void {
       if (currentMode === "work") {
         alert("25分の作業が終了しました！5分間の休憩に入りましょう。");
         currentMode = "break";
-        timeLeft = 5 * 60; // 5分休憩
+        timeLeft = 5 * 60;
       } else {
         alert("休憩が終了しました！次の作業を始めましょう。");
         currentMode = "work";
-        timeLeft = 25 * 60; // 25分作業
+        timeLeft = 25 * 60;
       }
       updateTimerDisplay();
       timerStatus.textContent = "準備完了";
@@ -72,7 +106,6 @@ function startTimer(): void {
   }, 1000);
 }
 
-// 一時停止
 function pauseTimer(): void {
   if (!isRunning) return;
   clearInterval(timerInterval!);
@@ -82,9 +115,8 @@ function pauseTimer(): void {
   timerStatus.textContent = "一時停止中";
 }
 
-// リセット
 function resetTimer(): void {
-  clearInterval(timerInterval!);
+  if (timerInterval) clearInterval(timerInterval);
   isRunning = false;
   currentMode = "work";
   timeLeft = 25 * 60;
@@ -93,72 +125,44 @@ function resetTimer(): void {
   pauseBtn.disabled = true;
   timerStatus.textContent = "準備完了";
   updateTimerDisplay();
-  render(); // タスク一覧側の強調を解除するために再描画
+  render();
 }
 
-// イベントリスナー
-startBtn.addEventListener("click", startTimer);
-pauseBtn.addEventListener("click", pauseTimer);
-resetBtn.addEventListener("click", resetTimer);
-
-// 2. 定数 & LocalStorage 補助関数
-const STORAGE_KEY = "ts_todo_app_data";
-
-function saveTodos(): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-}
-
-function loadTodos(): Todo[] {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return [];
-  try {
-    const parsed = JSON.parse(saved);
-    // 既存の古いデータ（priority がないデータ）にも互換性を持たせる処理
-    return parsed.map((item: any) => ({
-      ...item,
-      priority: item.priority || "medium",
-    }));
-  } catch (e) {
-    console.error("Failed to load todos from localStorage", e);
-    return [];
-  }
-}
-
-// 3. アプリの状態管理
-let todos: Todo[] = loadTodos();
-let currentFilter: FilterType = "all";
-
-// 4. DOM要素の取得（上部に一括配置）
-const inputEl = document.querySelector<HTMLInputElement>("#todo-input")!;
-const addBtn = document.querySelector<HTMLButtonElement>("#add-btn")!;
-const todoListEl = document.querySelector<HTMLUListElement>("#todo-list")!;
-const prioritySelect = document.querySelector<HTMLSelectElement>("#priority-select")!;
-
-// --- 優先度の重み付け（ソート用） ---
-const priorityOrder: Record<Priority, number> = {
-  high: 1,
-  medium: 2,
-  low: 3,
-};
-
-// --- 5. タスク一覧の描画関数 ---
+// 6. タスク一覧の描画関数
 function render(): void {
   todoListEl.innerHTML = "";
 
-  // ① フィルター処理
   let filteredTodos = todos.filter((todo) => {
     if (currentFilter === "active") return !todo.completed;
     if (currentFilter === "completed") return todo.completed;
     return true;
   });
 
-  // ② 優先度順（高 ➔ 中 ➔ 低）にソート
   filteredTodos.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
 
   updateFilterButtons();
 
   filteredTodos.forEach((todo) => {
     const li = document.createElement("li");
+
+    // タイマー開始ボタン (⏱️)
+    const timerStartForTaskBtn = document.createElement("button");
+    timerStartForTaskBtn.textContent = "⏱️";
+    timerStartForTaskBtn.classList.add("task-timer-btn");
+
+    if (todo.id === activeTodoId) {
+      li.classList.add("active-task");
+    }
+
+    timerStartForTaskBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      activeTodoId = todo.id;
+      currentMode = "work";
+      timeLeft = 25 * 60;
+      updateTimerDisplay();
+      startTimer();
+      render();
+    });
 
     // テキスト表示エリア
     const textSpan = document.createElement("span");
@@ -176,23 +180,22 @@ function render(): void {
     badge.textContent = priorityLabels[todo.priority];
     textSpan.appendChild(badge);
 
-    // ★ 1. クリックで完了/未完了の切り替え
+    // クリックで完了切り替え
     textSpan.addEventListener("click", () => {
       todo.completed = !todo.completed;
       saveTodos();
       render();
     });
 
-    // ★ 2. ダブルクリックでインライン編集
+    // ダブルクリックでインライン編集
     textSpan.addEventListener("dblclick", (e) => {
-      e.stopPropagation(); // 完了切り替えイベントの連動を防止
+      e.stopPropagation();
 
       const editInput = document.createElement("input");
       editInput.type = "text";
       editInput.value = todo.text;
       editInput.classList.add("edit-input");
 
-      // 確定処理（blur時またはEnter押下時）
       const finishEdit = () => {
         const newText = editInput.value.trim();
         if (newText !== "") {
@@ -207,7 +210,6 @@ function render(): void {
         if (e.key === "Enter") finishEdit();
       });
 
-      // span を input に置き換えてフォーカスを当てる
       li.replaceChild(editInput, textSpan);
       editInput.focus();
     });
@@ -223,28 +225,10 @@ function render(): void {
 
       setTimeout(() => {
         todos = todos.filter((t) => t.id !== todo.id);
+        if (activeTodoId === todo.id) activeTodoId = null;
         saveTodos();
         render();
       }, 250);
-    });
-
-    const timerStartForTaskBtn = document.createElement("button");
-    timerStartForTaskBtn.textContent = "⏱️";
-    timerStartForTaskBtn.classList.add("task-timer-btn");
-
-    // 現在選択されているタスクを強調
-    if (todo.id === activeTodoId) {
-      li.classList.add("active-task");
-    }
-
-    timerStartForTaskBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      activeTodoId = todo.id;
-      currentMode = "work";
-      timeLeft = 25 * 60;
-      updateTimerDisplay();
-      startTimer();
-      render();
     });
 
     li.appendChild(timerStartForTaskBtn);
@@ -254,7 +238,7 @@ function render(): void {
   });
 }
 
-// 6. タスク追加処理
+// 7. タスク追加処理
 function addTodo(): void {
   const text = inputEl.value.trim();
   if (text === "") return;
@@ -273,7 +257,7 @@ function addTodo(): void {
   render();
 }
 
-// 7. フィルターボタンのハイライト処理
+// 8. フィルターボタンの更新
 function updateFilterButtons(): void {
   const btnAll = document.querySelector<HTMLButtonElement>("#filter-all");
   const btnActive = document.querySelector<HTMLButtonElement>("#filter-active");
@@ -286,7 +270,7 @@ function updateFilterButtons(): void {
   if (currentFilter === "completed") btnCompleted?.classList.add("active");
 }
 
-// 8. JSON エクスポート / インポート機能
+// 9. JSON エクスポート / インポート機能
 function exportTodos(): void {
   if (todos.length === 0) {
     alert("エクスポートするタスクがありません。");
@@ -345,7 +329,11 @@ function isValidTodoList(data: any[]): data is Todo[] {
   );
 }
 
-// 9. イベントリスナーの設定
+// 10. イベントリスナー設定
+startBtn.addEventListener("click", startTimer);
+pauseBtn.addEventListener("click", pauseTimer);
+resetBtn.addEventListener("click", resetTimer);
+
 addBtn.addEventListener("click", addTodo);
 
 inputEl.addEventListener("keypress", (e) => {
@@ -370,5 +358,5 @@ document.querySelector("#filter-completed")?.addEventListener("click", () => {
 document.querySelector("#export-btn")?.addEventListener("click", exportTodos);
 document.querySelector("#import-file")?.addEventListener("change", importTodos);
 
-// 10. 初期描画
+// 11. 初期描画
 render();
