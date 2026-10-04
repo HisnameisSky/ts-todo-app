@@ -44,31 +44,40 @@ const addBtn = document.querySelector<HTMLButtonElement>("#add-btn")!;
 const todoListEl = document.querySelector<HTMLUListElement>("#todo-list")!;
 const prioritySelect = document.querySelector<HTMLSelectElement>("#priority-select")!;
 
-// 5. タスク一覧の描画関数
+// --- 優先度の重み付け（ソート用） ---
+const priorityOrder: Record<Priority, number> = {
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+// --- 5. タスク一覧の描画関数 ---
 function render(): void {
   todoListEl.innerHTML = "";
 
-  // フィルター処理
-  const filteredTodos = todos.filter((todo) => {
+  // ① フィルター処理
+  let filteredTodos = todos.filter((todo) => {
     if (currentFilter === "active") return !todo.completed;
     if (currentFilter === "completed") return todo.completed;
     return true;
   });
+
+  // ② 優先度順（高 ➔ 中 ➔ 低）にソート
+  filteredTodos.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
 
   updateFilterButtons();
 
   filteredTodos.forEach((todo) => {
     const li = document.createElement("li");
 
-    // テキスト部分
+    // テキスト表示エリア
     const textSpan = document.createElement("span");
     textSpan.textContent = todo.text;
     if (todo.completed) textSpan.classList.add("completed");
 
-    // 優先度バッジの生成
+    // 優先度バッジ
     const badge = document.createElement("span");
     badge.classList.add("priority-badge", `priority-${todo.priority}`);
-    
     const priorityLabels: Record<Priority, string> = {
       high: "高",
       medium: "中",
@@ -77,11 +86,40 @@ function render(): void {
     badge.textContent = priorityLabels[todo.priority];
     textSpan.appendChild(badge);
 
-    // 完了/未完了の切り替え
+    // ★ 1. クリックで完了/未完了の切り替え
     textSpan.addEventListener("click", () => {
       todo.completed = !todo.completed;
       saveTodos();
       render();
+    });
+
+    // ★ 2. ダブルクリックでインライン編集
+    textSpan.addEventListener("dblclick", (e) => {
+      e.stopPropagation(); // 完了切り替えイベントの連動を防止
+
+      const editInput = document.createElement("input");
+      editInput.type = "text";
+      editInput.value = todo.text;
+      editInput.classList.add("edit-input");
+
+      // 確定処理（blur時またはEnter押下時）
+      const finishEdit = () => {
+        const newText = editInput.value.trim();
+        if (newText !== "") {
+          todo.text = newText;
+          saveTodos();
+        }
+        render();
+      };
+
+      editInput.addEventListener("blur", finishEdit);
+      editInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") finishEdit();
+      });
+
+      // span を input に置き換えてフォーカスを当てる
+      li.replaceChild(editInput, textSpan);
+      editInput.focus();
     });
 
     // 削除ボタン
