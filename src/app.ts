@@ -91,6 +91,9 @@ function startTimer(): void {
       startBtn.disabled = false;
       pauseBtn.disabled = true;
 
+// ★ タイマー終了時にアラーム音を再生
+      playAlarmSound();
+      
       if (currentMode === "work") {
         alert("25分の作業が終了しました！5分間の休憩に入りましょう。");
         currentMode = "break";
@@ -327,6 +330,37 @@ function isValidTodoList(data: any[]): data is Todo[] {
       typeof item.text === "string" &&
       typeof item.completed === "boolean"
   );
+}
+
+// Web Audio API を使ったビープ音再生関数
+function playAlarmSound(): void {
+  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioContext) return;
+
+  const ctx = new AudioContext();
+
+  // ピピッという2音の電子音を生成
+  const playBeep = (freq: number, startTime: number, duration: number) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.value = freq;
+
+    // 音量のエンベロープ（ぽつんと切れるノイズを防止）
+    gain.gain.setValueAtTime(0.15, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  };
+
+  const now = ctx.currentTime;
+  playBeep(880, now, 0.15);       // 1音目 (ラ / A5)
+  playBeep(1760, now + 0.2, 0.3); // 2音目 (高いラ / A6)
 }
 
 // 10. イベントリスナー設定
