@@ -239,3 +239,14 @@ li span.completed {
 li.removing {
   animation: fadeOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* インライン編集用入力フィールド */
+.edit-input {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid var(--primary-color);
+  border-radius: 6px;
+  outline: none;
+  margin-right: 8px;
+}
