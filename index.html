@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TypeScript Todo App</title>
+  <!-- 1. CSSファイルの読み込みを追加 -->
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-card">
+    <h1>Todo アプリ</h1>
+
+    <!-- カレンダーコンテナ -->
+    <div id="calendar-container"></div>
+
+    <!-- タイマーエリア -->
+    <div class="pomodoro-card">
+      <div class="timer-display" id="timer-display">25:00</div>
+      <div class="timer-status" id="timer-status">準備完了</div>
+      <div class="timer-controls">
+        <button id="timer-start-btn">開始</button>
+        <button id="timer-pause-btn" disabled>一時停止</button>
+        <button id="timer-reset-btn">リセット</button>
+      </div>
+    </div>
+
+    <!-- 入力グループ -->
+    <div class="input-group">
+      <input type="text" id="todo-input" placeholder="新しいタスクを入力..." />
+      <select id="priority-select">
+        <option value="medium">中</option>
+        <option value="high">高 🔴</option>
+        <option value="low">低 🔵</option>
+      </select>
+      <button id="add-todo-btn">追加</button> <!-- IDを add-todo-btn に統一 -->
+    </div>
+
+    <!-- フィルターボタン -->
+    <div class="filter-group">
+      <button id="filter-all" class="active">すべて</button>
+      <button id="filter-active">未完了</button>
+      <button id="filter-completed">完了済み</button>
+    </div>
+
+    <!-- 2. app.ts側が参照している ID (todo-list-container) に合わせる -->
+    <div id="todo-list-container"></div>
+
+    <!-- アクティビティ・ヒートマップ（草）エリア -->
+    <div class="heatmap-card">
+      <div class="heatmap-title">✨ 創作活動の軌跡 (Activity Log)</div>
+      <div id="heatmap-grid" class="heatmap-grid"></div>
+    </div>
+
+    <!-- バックアップ機能グループ -->
+    <div class="backup-group">
+      <button id="export-btn">JSON エクスポート</button>
+      <label for="import-file" class="file-label">JSON インポート</label>
+      <input type="file" id="import-file" accept=".json" style="display: none;" />
+    </div>
+  </div>
+
+  <script type="module" src="/src/app.ts"></script>
+</body>
+</html>
