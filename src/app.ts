@@ -25,11 +25,11 @@ function loadTodos(): Todo[] {
 let todos: Todo[] = loadTodos();
 let selectedDate: string = new Date().toISOString().split('T')[0];
 let activeTaskId: string | null = null;
+let currentFilter: 'all' | 'active' | 'completed' = 'all';
 
 // ポモドーロタイマーの状態管理
 let timerSeconds: number = 25 * 60;
 let timerInterval: number | null = null;
-let isTimerRunning: number = 0;
 
 // カレンダーの初期化
 const calendar = new CalendarView('calendar-container', (dateStr) => {
@@ -49,6 +49,26 @@ const timerStartBtn = document.getElementById('timer-start-btn') as HTMLButtonEl
 const timerPauseBtn = document.getElementById('timer-pause-btn') as HTMLButtonElement;
 const timerResetBtn = document.getElementById('timer-reset-btn') as HTMLButtonElement;
 
+// フィルターボタン
+const filterAllBtn = document.getElementById('filter-all');
+const filterActiveBtn = document.getElementById('filter-active');
+const filterCompletedBtn = document.getElementById('filter-completed');
+
+// --- フィルターイベントの紐付け ---
+[filterAllBtn, filterActiveBtn, filterCompletedBtn].forEach(btn => {
+  btn?.addEventListener('click', (e) => {
+    document.querySelectorAll('.filter-group button').forEach(b => b.classList.remove('active'));
+    const target = e.currentTarget as HTMLButtonElement;
+    target.classList.add('active');
+
+    if (target.id === 'filter-active') currentFilter = 'active';
+    else if (target.id === 'filter-completed') currentFilter = 'completed';
+    else currentFilter = 'all';
+
+    renderTodoList();
+  });
+});
+
 // --- 1. ポモドーロタイマーのロジック ---
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -63,13 +83,12 @@ function updateTimerDisplay(statusText: string) {
   const taskLabel = activeTodo ? `🎯 集中中: ${activeTodo.title}` : '🎯 タスク未選択（フリー作業）';
   
   if (timerStatusEl) {
-    timerStatusEl.innerHTML = `${statusText} <br><span class="text-indigo-400 font-medium text-xs">${taskLabel}</span>`;
+    timerStatusEl.innerHTML = `${statusText} <br><span style="color: #818cf8; font-weight: 500; font-size: 12px;">${taskLabel}</span>`;
   }
 }
 
 timerStartBtn?.addEventListener('click', () => {
   if (timerInterval) return;
-  isTimerRunning = 1;
   timerStartBtn.disabled = true;
   timerPauseBtn.disabled = false;
   updateTimerDisplay('集中タイム中... 🔥');
@@ -111,12 +130,12 @@ timerResetBtn?.addEventListener('click', () => {
   updateTimerDisplay('準備完了');
 });
 
-// --- 2. タスク管理・描画ロジック ---
+// --- 2. タスク追加 ---
 addTodoButton?.addEventListener('click', async () => {
   const title = todoInput.value;
   if (!title.trim()) return;
 
-  const priority = prioritySelect.value as 'high' | 'medium' | 'low';
+  const priority = (prioritySelect?.value || 'medium') as 'high' | 'medium' | 'low';
   let newTodo = createTodoItem(title, selectedDate);
   newTodo.aiSummary = {
     summary: title,
@@ -129,7 +148,7 @@ addTodoButton?.addEventListener('click', async () => {
   renderAll();
 });
 
-// 全体再描画（自動保存を含む）
+// 全体再描画
 function renderAll() {
   saveTodos();
   calendar.render(todos);
@@ -138,7 +157,7 @@ function renderAll() {
   updateTimerDisplay('準備完了');
 }
 
-// ヒートマップを描画する関数
+// ヒートマップ描画
 function renderHeatmap() {
   const heatmapContainer = document.getElementById('heatmap-grid');
   if (!heatmapContainer) return;
@@ -166,15 +185,22 @@ function renderHeatmap() {
   }
 }
 
-// リスト描画
+// リスト描画（崩れ防止・フィルター完全対応）
 function renderTodoList() {
   if (!todoListContainer) return;
   todoListContainer.innerHTML = '';
 
-  const targetTodos = getTodosByDate(todos, selectedDate);
+  let targetTodos = getTodosByDate(todos, selectedDate);
+
+  // フィルター処理の適用
+  if (currentFilter === 'active') {
+    targetTodos = targetTodos.filter(t => !t.completed);
+  } else if (currentFilter === 'completed') {
+    targetTodos = targetTodos.filter(t => t.completed);
+  }
 
   if (targetTodos.length === 0) {
-    todoListContainer.innerHTML = `<p class="text-center text-xs text-slate-500 py-4">この日のタスクはありません</p>`;
+    todoListContainer.innerHTML = `<p style="text-align: center; font-size: 12px; color: var(--text-muted); padding: 16px 0;">該当するタスクはありません</p>`;
     return;
   }
 
@@ -182,55 +208,49 @@ function renderTodoList() {
     const isActive = todo.id === activeTaskId;
     
     const itemEl = document.createElement('div');
-    itemEl.className = `p-4 mb-3 border rounded-xl flex flex-col gap-2 shadow-md transition ${
-      isActive ? 'border-indigo-500 bg-indigo-950/25 active-task' : 'border-slate-800 bg-slate-900/80'
-    }`;
+    itemEl.className = `task-item ${isActive ? 'active-task' : ''}`;
+
+    const statusBadge = todo.completed 
+      ? `<span class="badge-completed">完了</span>` 
+      : '';
 
     itemEl.innerHTML = `
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-3 flex-1 min-w-0">
-          <input type="checkbox" ${todo.completed ? 'checked' : ''} class="todo-checkbox w-4 h-4 accent-indigo-500 rounded cursor-pointer" />
-          <span class="todo-title ${todo.completed ? 'line-through text-slate-500' : 'text-slate-100'} font-medium text-sm cursor-pointer truncate">
+      <div class="task-item-header">
+        <div class="task-left">
+          <input type="checkbox" ${todo.completed ? 'checked' : ''} class="todo-checkbox" style="cursor: pointer; width: 16px; height: 16px;" />
+          <span class="task-title-text ${todo.completed ? 'completed' : ''}">
             ${todo.title}
           </span>
+          ${statusBadge}
         </div>
-        <div class="flex items-center gap-1.5 shrink-0">
+
+        <div class="task-right">
           ${!todo.aiSummary || todo.aiSummary.summary === todo.title ? `
-            <button class="ai-enhance-btn text-xs px-2.5 py-1 rounded-lg bg-indigo-950 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-900 transition cursor-pointer">
-              🤖 AI解析
-            </button>
+            <button class="btn-mini btn-ai ai-enhance-btn">🤖 AI解析</button>
           ` : ''}
-          <button class="task-timer-btn text-xs px-2.5 py-1 rounded-lg border cursor-pointer ${
-            isActive ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-          }">
+          <button class="btn-mini btn-timer task-timer-btn ${isActive ? 'active' : ''}">
             ${isActive ? '⏱️ 集中中' : '⏱️ 選択'}
           </button>
-          <button class="delete-btn text-xs px-2 py-1 rounded-lg bg-rose-950/40 text-rose-400 border border-rose-500/30 hover:bg-rose-900/60 transition cursor-pointer">
-            🗑️
-          </button>
-          <span class="text-[10px] font-mono text-indigo-400 bg-indigo-950/50 px-2 py-0.5 rounded border border-indigo-500/30">
-            ${todo.dueDate || '期限なし'}
-          </span>
+          <button class="btn-mini btn-delete delete-btn">🗑️</button>
+          <span class="badge-dueDate">${todo.dueDate || '期限なし'}</span>
         </div>
       </div>
     `;
 
-    // 1. 完了トグル（チェックボックス ＆ タイトルクリック）
+    // イベント登録
     const toggleComplete = () => {
       todo.completed = !todo.completed;
       renderAll();
     };
 
     itemEl.querySelector('.todo-checkbox')?.addEventListener('change', toggleComplete);
-    itemEl.querySelector('.todo-title')?.addEventListener('click', toggleComplete);
+    itemEl.querySelector('.task-title-text')?.addEventListener('click', toggleComplete);
 
-    // 2. タイマー対象選択
     itemEl.querySelector('.task-timer-btn')?.addEventListener('click', () => {
       activeTaskId = isActive ? null : todo.id;
       renderAll();
     });
 
-    // 3. 任意のAI解析ボタン
     itemEl.querySelector('.ai-enhance-btn')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget as HTMLButtonElement;
       btn.textContent = '解析中...';
@@ -246,27 +266,24 @@ function renderTodoList() {
       }
     });
 
-    // 4. 削除ボタン
     itemEl.querySelector('.delete-btn')?.addEventListener('click', () => {
-      if (activeTaskId === todo.id) {
-        activeTaskId = null;
-      }
+      if (activeTaskId === todo.id) activeTaskId = null;
       todos = todos.filter(t => t.id !== todo.id);
       renderAll();
     });
 
-    // AI要約バッジ
+    // AI要約表示
     if (todo.aiSummary && todo.aiSummary.summary !== todo.title) {
       const aiBadgeEl = document.createElement('div');
-      aiBadgeEl.className = "text-xs bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex flex-col gap-1 text-slate-300 mt-2";
+      aiBadgeEl.style.cssText = "font-size: 12px; background: rgba(2, 6, 23, 0.8); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); color: var(--text-muted); margin-top: 4px;";
       aiBadgeEl.innerHTML = `
-        <div class="flex items-center gap-2">
-          <span class="text-indigo-400 font-semibold">🤖 AI要約:</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #818cf8; font-weight: 600;">🤖 AI要約:</span>
           <span>${todo.aiSummary.summary}</span>
         </div>
-        <div class="flex gap-1 mt-1 items-center">
-          ${todo.aiSummary.tags.map(tag => `<span class="bg-indigo-900/40 text-indigo-300 px-1.5 py-0.5 rounded text-[10px]">#\${tag}</span>`).join('')}
-          <span class="ml-auto text-[10px] uppercase font-mono text-amber-400">優先度: ${todo.aiSummary.priority}</span>
+        <div style="display: flex; gap: 6px; margin-top: 6px; align-items: center;">
+          ${todo.aiSummary.tags.map(tag => `<span style="background: rgba(99, 102, 241, 0.2); color: #c7d2fe; padding: 2px 6px; border-radius: 4px; font-size: 10px;">#${tag}</span>`).join('')}
+          <span style="margin-left: auto; font-size: 10px; color: #fbbf24; font-family: monospace;">優先度: ${todo.aiSummary.priority}</span>
         </div>
       `;
       itemEl.appendChild(aiBadgeEl);

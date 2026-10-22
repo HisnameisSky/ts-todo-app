@@ -347,3 +347,113 @@ li.active-task {
   border-color: rgba(129, 140, 248, 1);
   box-shadow: 0 0 10px rgba(99, 102, 241, 0.6); 
 }
+
+/* タスクカード内のインラインボタン調整 */
+.task-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.task-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.task-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.task-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.task-title-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.task-title-text.completed {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* バッジスタイル */
+.badge-completed {
+  font-size: 10px;
+  font-weight: 600;
+  color: #34d399;
+  background: rgba(6, 78, 59, 0.5);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.badge-dueDate {
+  font-size: 10px;
+  font-family: monospace;
+  color: #818cf8;
+  background: rgba(30, 27, 75, 0.5);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* ミニボタン専用の上書き */
+.btn-mini {
+  padding: 5px 10px !important;
+  font-size: 11px !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.btn-ai {
+  background: #1e1b4b !important;
+  color: #c7d2fe !important;
+  border: 1px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+.btn-ai:hover {
+  background: #312e81 !important;
+}
+
+.btn-timer {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.btn-timer.active {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  border-color: #6366f1 !important;
+}
+
+.btn-delete {
+  background: rgba(136, 19, 55, 0.4) !important;
+  color: #fda4af !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+}
+
+.btn-delete:hover {
+  background: rgba(159, 18, 57, 0.7) !important;
+}

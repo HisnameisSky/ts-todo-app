@@ -53,3 +53,11 @@ export function isValidTodoList(data: any): data is Todo[] {
       ["high", "medium", "low"].includes(item?.priority)
   );
 }
+
+// フィルター状態（'all' | 'active' | 'completed'）に応じたフィルタリング
+export function getFilteredTodos(todos: Todo[], date: string, filter: string) {
+  const dateTodos = getTodosByDate(todos, date);
+  if (filter === 'active') return dateTodos.filter(t => !t.completed);
+  if (filter === 'completed') return dateTodos.filter(t => t.completed);
+  return dateTodos; // 'all'
+}
